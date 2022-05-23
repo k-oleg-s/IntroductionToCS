@@ -96,6 +96,10 @@ namespace Lesson3
             }
             Console.WriteLine("");
         }
+        static void Task4()
+        {
+            int[,] arr = new int[10,10];
+            Random rnd = new Random();
 
         //static void Task4()
         //{
@@ -106,6 +110,9 @@ namespace Lesson3
         //    //int[] ship1 = {4,1};
 
 
+            int xFst_empty = -1;
+            int ye = 0;
+            int x_empty_space=0;
 
         //    int xFst_empty = -1;
         //    int ye = 0;
@@ -113,46 +120,21 @@ namespace Lesson3
 
 
 
-
-        //    for (int x = 0; x < arr.GetLength(0); x++)
-        //    {
-        //        for (int y = 0; y < arr.GetLength(1); y++)
-        //        {
-        //            if (arr[x, y] == 0) { x_empty_space++; if (xFst_empty == -1) xFst_empty = x; }
-        //            if (arr[x, y] != 0) { x_empty_space = 0; xFst_empty = -1; }
-
-        //            if (x_empty_space == 4 + 2)
-        //            {
-        //                int flagEmptyNeighbor = 1;
-
-        //            }
-        //        }
-        //    }
-
-        //    //void check_neighbors(int x, int y, int longs, int poX)
-        //    //{
-        //    //    if (x == 0)
-        //    //        for (int j = y-1; j < y+2; y++)
-        //    //        {
-        //    //            if (arr[i, j] == 0) { }
-        //    //        }
-        //    //}
-
-        //    //void fill(int x, int y, int longs, int poX)
-        //    //{
-
-        //    //    for (int i = x; i < longs; i++)
-        //    //    {
-        //    //        for (int j = 0; j < arr.GetLength(1); j++)
-        //    //        {
-        //    //            if (arr[i, j] == 0) { }
-        //    //        }
-
-        //    //    }
-        //    //}
+            for (int x = 0; x < arr.GetLength(0); x++)
+            {
+                for (int y = 0; y < arr.GetLength(1); y++)
+                {
+                    if (arr[x, y] == 0) { x_empty_space++; if (xFst_empty == -1) xFst_empty = x; }
+                    if (arr[x, y] != 0) { x_empty_space = 0; xFst_empty = -1; }
 
 
-        //}
+
+            //        }
+
+
+
+
+
 
     }
 }
