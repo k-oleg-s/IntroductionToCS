@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Lesson3
+namespace Lesson4
 {
     internal class Program
     {
@@ -12,11 +12,13 @@ namespace Lesson3
         {
             while (true)
             {
+                Console.WriteLine();
                 Console.WriteLine("введите номер задачи:");
                 Console.WriteLine("0 - Выход из приложения");
-                Console.WriteLine("1 - элементы двумерного массива по диагонали");
-                Console.WriteLine("2 - программа «Телефонный справочник»");
-                Console.WriteLine("3 - строка в обратном порядке");
+                Console.WriteLine("1 - вывод ФИО через GetFullName метод");
+                Console.WriteLine("2 - сумма чисел в строке");
+                Console.WriteLine("3 - время года по номеру месяца");
+                Console.WriteLine("4 - число Фибоначи");
                 int task = int.Parse(Console.ReadLine());
                 //int task = 1;
 
@@ -26,115 +28,106 @@ namespace Lesson3
                     case 1: Task1(); break;
                     case 2: Task2(); break;
                     case 3: Task3(); break;
+                    case 4: Task4(); break;
                     default: Console.WriteLine("Задача не выбрана!"); break;
                 }
             }
+            //do
+            //{ Task1(); } while (true);
+            //Task4();
 
-            ////4.«Морской бой»: вывести на экран массив 10х10, состоящий из символов X и O, где Х — элементы кораблей, а О — свободные клетки.
-            // Task4();     Не сделано
         }
 
-        /// <summary>
-        /// программа, выводящую элементы двумерного массива по диагонали.
-        /// </summary>
         static void Task1()
         {
-            int dimArr = 4;
-            Random rnd= new Random();
-            int[,] arr = new int[dimArr,dimArr]; 
-
-            for (int i = 0; i < dimArr; i++)    // Заполним массив случайными числами
-            {
-                for (int j = 0; j < dimArr; j++)
-                {
-                    arr[i, j] = rnd.Next(0, 100);
-                }
-            }
-
-            int counter = 0;
-
-            for (int i = 0; i < arr.GetLength(0); i++)
-            {
-                for (int j = 0; j < arr.GetLength(1);  j++  )
-                {
-                    for (int k = 0; k < counter; k++) Console.Write("   ");
-                    Console.WriteLine( $" {arr[i, j].ToString("000")}  "  ) ;
-                    counter++;
-                }
-            }
+            GetFullName("Иванов", "Иван", "Иванович");
+            GetFullName("Качановская", "Алёна", "Олеговна");
+            GetFullName("Качановский", "Олег", "Станиславович");
         }
-        /// <summary>
-        /// программа «Телефонный справочник»: двумерный массив 5х2, хранящий список телефонных контактов: первый элемент хранит имя контакта, второй — номер телефона/email
-        /// </summary>
+        static void GetFullName(string firstName, string lastName, string patronymic)
+        {            Console.WriteLine($" {lastName} {firstName} {patronymic} ");        }
+
         static void Task2()
         {
-            string[,] spravochnik = 
+            Console.WriteLine("введите числа через пробел:");
+            char[] chars = {' ',',' };
+            string input = Console.ReadLine();
+            string [] nums = input.Split( chars, StringSplitOptions.RemoveEmptyEntries);
+            int sum=0, i_int, add_int;
+            foreach ( string i in nums)
             {
-                { "Олег", "oleg@a.com"},
-                { "Пётр", "peter@a.com"},
-                { "Сергей", "serg@a.com"},
-                { "Стёпа", "step@a.com"},
-                { "Федя", "fedr@a.com"}
-             };
-
-            for (int i = 0; i < spravochnik.GetLength(0); i++)
-            {
-                    Console.WriteLine($" имя:{spravochnik[i,0]} \t e-mail:{spravochnik[i,1]}");
+                add_int =  int.TryParse(i, out i_int) ? i_int : 0;
+                sum = sum + add_int;
             }
+            Console.WriteLine($"сумма чисел = {sum}");
         }
+
+
+
         /// <summary>
-        ///  программа, выводящая введённую пользователем строку в обратном порядке
+        ///  метод по определению времени года. На вход подаётся число – порядковый номер
+        //        месяца.На выходе — значение из перечисления(enum) — Winter, Spring, Summer,
+        //Autumn.Написать метод, принимающий на вход значение из этого перечисления и
+        //возвращающий название времени года(зима, весна, лето, осень). Используя эти методы,
+        //ввести с клавиатуры номер месяца и вывести название времени года.Если введено
+        //некорректное число, вывести в консоль текст «Ошибка: введите число от 1 до 12».
         /// </summary>
         static void Task3()
-        {
-            Console.WriteLine("введите строку:");
-            Console.WriteLine("Обратный текст:");
-            string stroka = Console.ReadLine();
-            for (int i= stroka.Length-1; i >= 0; i--)
+        {         
+            Console.WriteLine("введите номер месяца:");
+            string input;
+            input = Console.ReadLine();
+            if (int.TryParse(input,out int month) && month>0 && month<13)
             {
-                Console.Write($"{stroka[i]}");
+                Seasons season = getSeasonNum(month);
+                Console.WriteLine($" сезон месяца {getSeasonName(season)} ");
             }
-            Console.WriteLine("");
+            else Console.WriteLine("введите число от 1 до 12");
+           
         }
+        enum Seasons { Winter, Spring, Summer, Autumn , noSeason};
+        enum SeasonsName { Зима, Весна, Лето, Осень };
+        static Seasons getSeasonNum(int month)
+        {
+            Seasons r;
+            r = (month == 12 || month < 3) ? Seasons.Winter : 
+             (month >= 3 && month < 6) ? Seasons.Spring : 
+             (month >= 6 && month < 9) ? Seasons.Summer : 
+             (month >= 9 && month < 12) ? Seasons.Autumn : Seasons.noSeason;
+            return r;
+        }
+        static SeasonsName getSeasonName(Seasons seasons)
+        {
+            return (SeasonsName)seasons;
+        }
+
         static void Task4()
         {
-            int[,] arr = new int[10,10];
-            Random rnd = new Random();
+            Console.WriteLine("введите число n последовательности фибоначчи");
+            int x = int.Parse(Console.ReadLine());
+            Console.WriteLine($" Фибоначчи({x})={getFidonachi(x)} ");
+        }
 
-        //static void Task4()
-        //{
-        //    int[,] arr = new int[10,10];
-        //    Random rnd = new Random();
+        static int getFidonachi(int x)
+        {
+            //int f1=0, f2=1;
+            int f = 0;
 
-        //    //int[] ship2 = { 3, 2 };
-        //    //int[] ship1 = {4,1};
+            switch (x)
+            { 
+            case 0: 
+                f = 0; break;
+            case 1:
+                f = 1; break;
+            case 2:
+                f = 1; break;
+            case 3:
+                f = 2; break;
+            default: f = getFidonachi(x - 1) + getFidonachi(x - 2); break;
+            }
 
+             return f;
+            }
 
-            int xFst_empty = -1;
-            int ye = 0;
-            int x_empty_space=0;
-
-        //    int xFst_empty = -1;
-        //    int ye = 0;
-        //    int x_empty_space=0;
-
-
-
-            for (int x = 0; x < arr.GetLength(0); x++)
-            {
-                for (int y = 0; y < arr.GetLength(1); y++)
-                {
-                    if (arr[x, y] == 0) { x_empty_space++; if (xFst_empty == -1) xFst_empty = x; }
-                    if (arr[x, y] != 0) { x_empty_space = 0; xFst_empty = -1; }
-
-
-
-            //        }
-
-
-
-
-
-
-    }
+        }
 }
