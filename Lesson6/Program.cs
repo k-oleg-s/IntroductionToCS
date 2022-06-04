@@ -11,10 +11,20 @@ namespace Lesson6
         static void Main(string[] args)
         {
             TaskManager tm = new TaskManager();
+
+            //while (true)
+            //{
                 tm.show();
-                Console.WriteLine("введите id процесса для завершения:");
-                int id = int.Parse(Console.ReadLine());
-                tm.kill(id);                
+                Console.WriteLine("введите id или имя процесса для завершения:");
+                string input = Console.ReadLine();
+                //bool is_int = (int.TryParse/*(*/input, out int id));
+
+                if (int.TryParse(input, out int id))
+                {
+                    tm.kill(id);
+                }
+                else tm.kill(input);
+            //}
         }
     }
 }
