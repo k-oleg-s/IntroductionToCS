@@ -8,21 +8,43 @@ using System.Threading.Tasks;
 
 namespace Lesson9
 {
+    /// <summary>
+    /// Основной класс 
+    /// </summary>
     internal class FileManager
     {
-        private int WindowHeight=30;
-        private int WindowWidth=120;
+        private int WindowHeight;
+        private int WindowWidth;
         private string currentDir = Directory.GetCurrentDirectory();
+        private string applicationErrorsDir;
+        private StringBuilder infoString = new StringBuilder();
+
+        /// <summary>
+        /// переменные для реализации истории команд
+        /// </summary>
+        private string[] history = new string[10];  // массив истории команд.  Возьмем к примеру буфер на 10 команд
+        private int hC=0;   // history counter - текущий номер последней команды
+        private int hCmax=0;  // max кол-во команд в истории
+        int hRL = 0; 
+        bool GetLastStarted=false;
+
 
         public FileManager()
         {
+            applicationErrorsDir = Directory.GetCurrentDirectory() + "/errors";
+            Directory.CreateDirectory(applicationErrorsDir);
+            ReadSettings();
             Console.Title = "FileManager";
             Console.BackgroundColor = ConsoleColor.DarkBlue;
             Console.SetWindowSize(WindowWidth, WindowHeight);
             Console.SetBufferSize(WindowWidth, WindowHeight);
+            
 
-            DrawWindow(0, 0, WindowWidth, 18);
-            DrawWindow(0, 18, WindowWidth, 8);
+            DrawWindow(0, 0, WindowWidth, 18);  // окно файлов
+            DrawWindow(0, 18, WindowWidth, 8);  // окно инфо
+
+            infoString.Clear();
+            infoString.AppendLine(DateTime.Now.ToString());
         }
 
 
@@ -41,7 +63,6 @@ namespace Lesson9
         /// <param name="width">Длина строки ввода</param>
          void ProcessEnterCommand(int width)
         {
-            //TODO: ...
             (int left, int top) = GetCursorPosition();
             StringBuilder command = new StringBuilder();
             ConsoleKeyInfo keyInfo;
@@ -53,7 +74,7 @@ namespace Lesson9
                 key = keyInfo.KeyChar;
 
                 if (keyInfo.Key != ConsoleKey.Enter && keyInfo.Key != ConsoleKey.Backspace &&
-                    keyInfo.Key != ConsoleKey.UpArrow)
+                    keyInfo.Key != ConsoleKey.UpArrow && keyInfo.Key!=ConsoleKey.DownArrow )
                     command.Append(key);
 
                 (int currentLeft, int currentTop) = GetCursorPosition();
@@ -82,6 +103,32 @@ namespace Lesson9
                     }
                 }
 
+                if (keyInfo.Key == ConsoleKey.UpArrow)
+                {
+                    // Затираем командную строку
+                    command.Clear();
+                    Console.SetCursorPosition(left, top);
+                    Console.Write("                                ");
+                    Console.SetCursorPosition(left, top);
+
+
+                    command.Append( historyGetNext());
+                    Console.Write(command.ToString());
+             
+                }
+                if (keyInfo.Key == ConsoleKey.DownArrow)
+                {
+                    // Затираем командную строку
+                    command.Clear();
+                    Console.SetCursorPosition(left, top);
+                    Console.Write("                                ");
+                    Console.SetCursorPosition(left, top);
+                    
+                    
+                    command.Append(historyGetLast());
+                    Console.Write(command.ToString());
+                }
+
             }
             while (keyInfo.Key != ConsoleKey.Enter);
             ParseCommandString(command.ToString());
@@ -92,32 +139,195 @@ namespace Lesson9
             string[] commandParams = command.ToLower().Split(' ');
             if (commandParams.Length > 0)
             {
-                switch (commandParams[0])
+                historyAdd(command);    // для упрощения запоминаем  в историю все комманды, даже кривые
+                GetLastStarted = false;
+
+                // Оборачиваем в try/catch этот error prone участок
+                try
                 {
-                    case "cd":
-                        if (commandParams.Length > 1)
-                            if (Directory.Exists(commandParams[1]))
+                    switch (commandParams[0])
+                    {
+                        case "cd":
+                            if (commandParams.Length > 1)
+                                if (Directory.Exists(commandParams[1]))
+                                {
+                                    currentDir = commandParams[1];
+                                    DrawTree(new DirectoryInfo(currentDir), 1);
+
+
+                                    Properties.Settings.Default.LastDir = currentDir;
+                                    Properties.Settings.Default.Save();
+                                }
+                            infoString.Clear();
+                            infoString.AppendLine(DateTime.Now.ToString());
+                            break;
+                        case "ls":
+                            if (commandParams.Length > 1 && Directory.Exists(commandParams[1]))
+                                if (commandParams.Length > 3 && commandParams[2] == "-p" && int.TryParse(commandParams[3], out int n))
+                                {
+                                    DrawTree(new DirectoryInfo(commandParams[1]), n);
+                                }
+                                else
+                                {
+                                    DrawTree(new DirectoryInfo(commandParams[1]), 1);
+                                }
+                            if (commandParams.Length == 1)   // ls без параметров = ls текущей дирректории
                             {
-                                currentDir = commandParams[1];
+                                DrawTree(new DirectoryInfo(currentDir), 1);
                             }
-                        break;
-                    case "ls":
-                        if (commandParams.Length > 1 && Directory.Exists(commandParams[1]))
-                            if (commandParams.Length > 3 && commandParams[2] == "-p" && int.TryParse(commandParams[3], out int n))
+                            infoString.Clear();
+                            infoString.AppendLine(DateTime.Now.ToString());
+                            break;
+                        case "copy":
+                            if (commandParams.Length == 3)
                             {
-                                DrawTree(new DirectoryInfo(commandParams[1]), n);
+                                if (Directory.Exists(commandParams[1]) && Directory.Exists(commandParams[2]))
+                                {
+                                    DirectoryInfo src = new DirectoryInfo(commandParams[1]);
+                                    DirectoryInfo dst = new DirectoryInfo(commandParams[2]);
+                                    CopyFilesRecursively(src, dst);
+                                }
+                                if (File.Exists(commandParams[1]) && File.Exists(commandParams[2]))
+                                {
+                                    FileInfo src = new FileInfo(commandParams[1]);
+                                    FileInfo dst = new FileInfo(commandParams[2]);
+                                    File.Copy(src.FullName, dst.FullName);
+                                }
+                                infoString.Clear();
+                                infoString.AppendLine(DateTime.Now.ToString());
                             }
-                            else
+                            break;
+                        case "rm":
+                            if (commandParams.Length == 2)
                             {
-                                DrawTree(new DirectoryInfo(commandParams[1]), 1);
+                                if (Directory.Exists(commandParams[1]))
+                                {
+                                    DirectoryInfo dir = new DirectoryInfo(commandParams[1]);
+                                    dir.Delete(true);
+                                }
+                                if (File.Exists(commandParams[1]))
+                                {
+                                    FileInfo file = new FileInfo(commandParams[1]);
+                                    file.Delete();
+                                }
+                                infoString.Clear();
+                                infoString.AppendLine(DateTime.Now.ToString());
                             }
-                        break;
+                            break;
+                        case "file":
+                            if (commandParams.Length == 2)
+                            {
+                                infoString.Clear();
+                                infoString.AppendLine(DateTime.Now.ToString());
+                                if (Directory.Exists(commandParams[1]))
+                                {
+                                    DirectoryInfo dir = new DirectoryInfo(commandParams[1]);
+                                    infoString.AppendLine($"      директория {dir.Name} вложена в {dir.Parent.FullName} ");
+                                }
+                                else
+                                if (File.Exists(commandParams[1]))
+                                {
+                                    FileInfo fileInfo = new FileInfo(commandParams[1]);
+                                    infoString.AppendLine($"      файл {fileInfo.FullName} находится в {fileInfo.Directory.FullName} ");
+                                }
+                                else { infoString.AppendLine($"         параметр {commandParams[1]} не файл и не директория"); }
+                            }
+                            break;
+                        default:
+                            {
+                                infoString.Clear();
+                                infoString.AppendLine(DateTime.Now.ToString());
+                                infoString.AppendLine($"      данная комманда : {commandParams[0]} не обрабатывается");
+                            }
+                            break;
+                    }
                 }
-            }
+                catch (Exception ex)
+                {
+                    logError(ex);
+                }
+            }      
+            
             UpdateConsole();
         }
 
-         string GetShortPath(string path)
+        /// <summary>
+        /// Логирование ошибок. 
+        /// </summary>
+        /// <param name="exception"></param>
+        void logError(Exception exception )
+        {
+            var file = Path.Combine(applicationErrorsDir, "log_exceptions.txt");
+            File.AppendAllLines(file, new[] { DateTime.Now +" " + exception.Message.ToString() , "call stack: " + exception.StackTrace });
+        }
+        
+        /// <summary>
+        /// Добавляем в массив истории команд
+        /// </summary>
+        /// <param name="command"></param>
+        void   historyAdd(string command)
+        { 
+            history[hC] = command;
+            hC++;           
+           if (hC==10) hC= 0;  // пошли записывать по кругу 
+           if (hC > hCmax) hCmax = hC;
+        }
+        /// <summary>
+        /// Вызывается при нажатии стрелка вниз
+        /// </summary>
+        /// <returns></returns>
+        string  historyGetLast()
+        {
+            if (GetLastStarted == false)
+            {
+                if (hC>0) hRL = hC - 1;
+                    else hRL = hC;
+                GetLastStarted = true;
+            }
+
+            if (GetLastStarted == true)
+            {
+                if (hRL == 0) hRL = hCmax;  // пошли по кругу
+                else hRL--;
+            }
+ 
+            return history[hRL];
+        }
+        /// <summary>
+        /// Вызывается при нажатии стрелка вверх
+        /// </summary>
+        /// <returns></returns>
+        string historyGetNext()
+        {
+            if (GetLastStarted == true)
+            {
+                if (hRL == hCmax) hRL = 0;  // пошли по кругу
+                else if (history.Length-1 > hRL ) hRL++;
+            }
+            else hRL = hC;
+
+            return history[hRL];
+        }
+        
+        void CopyFilesRecursively(DirectoryInfo source, DirectoryInfo target)
+        {
+            foreach (DirectoryInfo dir in source.GetDirectories())
+                CopyFilesRecursively(dir, target.CreateSubdirectory(dir.Name));
+            foreach (FileInfo file in source.GetFiles())
+                file.CopyTo(Path.Combine(target.FullName, file.Name));
+        }
+
+        void DeleteDirRecursively(DirectoryInfo directory)
+        {
+            foreach (DirectoryInfo dir in directory.GetDirectories())
+            {
+                foreach(FileInfo file in dir.GetFiles()) file.Delete();
+                if (!dir.GetDirectories().Any()) dir.Delete();
+                    else DeleteDirRecursively(dir);
+            }
+        }
+
+        string GetShortPath(string path)
         {
             StringBuilder shortPathName = new StringBuilder((int)API.MAX_PATH);
             API.GetShortPathName(path, shortPathName, API.MAX_PATH);
@@ -131,6 +341,7 @@ namespace Lesson9
         /// </summary>
         public  void UpdateConsole()
         {
+            PrintInfo(infoString);
             DrawConsole(GetShortPath(currentDir), 0, 26, WindowWidth, 3);
             ProcessEnterCommand(WindowWidth);
         }
@@ -258,6 +469,30 @@ namespace Lesson9
                 GetTree(tree, subDirects[i], indent, i == subDirects.Length - 1);
         }
 
+
+        void PrintInfo(StringBuilder stringBuilder)
+        {
+            DrawWindow(0, 18, WindowWidth, 8);  // окно инфо
+            (int currentLeft, int currentTop) = GetCursorPosition();
+
+            string[] lines = stringBuilder.ToString().Split('\n');
+
+            for (int i = 0; i < lines.Length && i<8; i++)
+            { 
+            Console.SetCursorPosition(currentLeft + 1, currentTop + 1+i);
+            Console.Write(lines[i]);                
+            }
+            
+        }
+        void ReadSettings()
+        {
+            WindowHeight = Properties.Settings.Default.WindowH;
+            WindowWidth = Properties.Settings.Default.WindowW;
+
+            if (Directory.Exists(Properties.Settings.Default.LastDir))
+                { currentDir = Properties.Settings.Default.LastDir; }
+            else { currentDir = Directory.GetCurrentDirectory(); }
+        }
 
     }
 }
